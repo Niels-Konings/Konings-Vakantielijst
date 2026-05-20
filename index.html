@@ -807,8 +807,8 @@ const CATEGORY_ICONS = {
 };
 
 const isSyncConfigured =
-  JSONBIN_API_KEY && JSONBIN_API_KEY !== 'PLAK_HIER_JE_X_MASTER_KEY' &&
-  JSONBIN_BIN_ID && JSONBIN_BIN_ID !== 'PLAK_HIER_JE_BIN_ID';
+  JSONBIN_API_KEY && JSONBIN_API_KEY !== '$2a$10$bsO2u2ek8TuqAjoWwenAyePEgsu4ssqmLGkKMqNyy5woC1m3h92gW'&&
+  JSONBIN_BIN_ID && JSONBIN_BIN_ID !== '6a0e27e5ee5a733b12f18fc1';
 
 function buildDefaultState() {
   const items = DEFAULT_ITEMS.map((it, i) => ({ ...it, id: 'd' + i, custom: false }));
