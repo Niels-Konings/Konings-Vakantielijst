@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#1a3a2e" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Vakantie Koningslijst</title>
+
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<style>
+  :root {
+    --bg: #f4f0e8;
+    --bg-deep: #ebe5d6;
+    --ink: #1a2e26;
+    --ink-soft: #4a5d54;
+    --sun: #e8a838;
+    --sun-deep: #c8881a;
+    --leaf: #4a7a5c;
+    --leaf-deep: #2d5a3f;
+    --coral: #d4634a;
+    --shadow: rgba(26, 46, 38, 0.08);
+    --shadow-strong: rgba(26, 46, 38, 0.18);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Geist', -apple-system, sans-serif;
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 10% 0%, rgba(232, 168, 56, 0.12) 0%, transparent 40%),
+      radial-gradient(circle at 90% 100%, rgba(74, 122, 92, 0.1) 0%, transparent 40%),
+      var(--bg);
+  }
+
+  #root { min-height: 100vh; }
+
+  .app {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 16px 12px 100px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin: 8px 0 16px;
+    position: relative;
+  }
+
+  .header h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 800;
+    font-size: 32px;
+    margin: 0;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+
+  .header h1 .ampersand {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--sun-deep);
+  }
+
+  .header .subtitle {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+
+  /* Sync status */
+  .sync-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 8px;
+    transition: all 0.3s;
+  }
+
+  .sync-status.synced {
+    background: rgba(74, 122, 92, 0.15);
+    color: var(--leaf-deep);
+  }
+
+  .sync-status.syncing {
+    background: rgba(232, 168, 56, 0.15);
+    color: var(--sun-deep);
+  }
+
+  .sync-status.offline {
+    background: rgba(212, 99, 74, 0.15);
+    color: var(--coral);
+  }
+
+  .sync-status.local {
+    background: rgba(26, 46, 38, 0.08);
+    color: var(--ink-soft);
+  }
+
+  .sync-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .sync-status.syncing .sync-dot {
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Progress */
+  .progress-card {
+    background: var(--ink);
+    color: var(--bg);
+    border-radius: 20px;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 24px var(--shadow-strong);
+    position: sticky;
+    top: 8px;
+    z-index: 10;
+  }
+
+  .progress-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+  }
+
+  .progress-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    opacity: 0.7;
+  }
+
+  .progress-count {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 600;
+  }
+
+  .progress-count .total {
+    opacity: 0.5;
+    font-size: 14px;
+  }
+
+  .progress-bar {
+    height: 8px;
+    background: rgba(244, 240, 232, 0.15);
+    border-radius: 99px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--sun) 0%, var(--coral) 100%);
+    border-radius: 99px;
+    transition: width 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+    box-shadow: 0 0 12px rgba(232, 168, 56, 0.5);
+  }
+
+  .progress-percent {
+    text-align: right;
+    font-size: 10px;
+    opacity: 0.6;
+    margin-top: 6px;
+    letter-spacing: 0.1em;
+  }
+
+  /* Category */
+  .category {
+    margin-bottom: 24px;
+  }
+
+  .category-title {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 12px 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink);
+  }
+
+  .category-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--ink-soft) 0%, transparent 100%);
+    opacity: 0.3;
+  }
+
+  .category-icon {
+    font-size: 22px;
+  }
+
+  /* Grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  @media (max-width: 380px) {
+    .grid { gap: 6px; }
+  }
+
+  /* Item card */
+  .item {
+    aspect-ratio: 1;
+    border-radius: 14px;
+    background: #fff;
+    border: 1.5px solid rgba(26, 46, 38, 0.08);
+    padding: 6px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.34, 1.2, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .item:active {
+    transform: scale(0.94);
+  }
+
+  .item-icon {
+    font-size: 24px;
+    line-height: 1;
+    transition: transform 0.3s ease;
+  }
+
+  .item-label {
+    font-size: 10px;
+    text-align: center;
+    line-height: 1.15;
+    font-weight: 500;
+    color: var(--ink);
+    word-break: break-word;
+    hyphens: auto;
+    padding: 0 2px;
+  }
+
+  .item.ready {
+    background: linear-gradient(135deg, var(--sun) 0%, #f0b84a 100%);
+    border-color: var(--sun-deep);
+    box-shadow: 0 4px 12px rgba(232, 168, 56, 0.35);
+    animation: readyPulse 0.4s cubic-bezier(0.34, 1.6, 0.64, 1);
+  }
+
+  .item.ready .item-label {
+    color: #5a3a0a;
+    font-weight: 600;
+  }
+
+  .item.ready .item-icon {
+    transform: scale(1.1);
+  }
+
+  @keyframes readyPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  .item.packed {
+    background: var(--bg-deep);
+    border-color: rgba(26, 46, 38, 0.1);
+    border-style: dashed;
+    opacity: 0.65;
+  }
+
+  .item.packed .item-icon,
+  .item.packed .item-label {
+    filter: blur(1.5px);
+    opacity: 0.7;
+  }
+
+  .item.packed::after {
+    content: '✓';
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--leaf-deep);
+    background: rgba(244, 240, 232, 0.9);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: none;
+    opacity: 1;
+  }
+
+  .item.custom .item-label::before {
+    content: '★ ';
+    color: var(--coral);
+  }
+
+  /* Glow effect bij wijzigingen */
+  .item.glowing {
+    animation: glowPulse 1.2s cubic-bezier(0.34, 1.4, 0.64, 1);
+    z-index: 5;
+  }
+
+  @keyframes glowPulse {
+    0% {
+      box-shadow:
+        0 0 0 0 rgba(74, 122, 92, 0.7),
+        0 0 20px 4px rgba(74, 122, 92, 0.4);
+      transform: scale(1);
+    }
+    30% {
+      box-shadow:
+        0 0 0 8px rgba(74, 122, 92, 0),
+        0 0 30px 8px rgba(74, 122, 92, 0.6);
+      transform: scale(1.05);
+    }
+    100% {
+      box-shadow:
+        0 0 0 12px rgba(74, 122, 92, 0),
+        0 0 0 0 rgba(74, 122, 92, 0);
+      transform: scale(1);
+    }
+  }
+
+  /* Add button */
+  .add-button {
+    width: 100%;
+    margin-top: 6px;
+    padding: 10px;
+    background: transparent;
+    border: 1.5px dashed rgba(26, 46, 38, 0.25);
+    border-radius: 12px;
+    color: var(--ink-soft);
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  /* Packed section */
+  .packed-section {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 2px dashed rgba(26, 46, 38, 0.15);
+  }
+
+  .packed-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding: 0 4px;
+  }
+
+  .packed-header h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--leaf-deep);
+  }
+
+  .packed-count {
+    background: var(--leaf);
+    color: var(--bg);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 99px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 46, 38, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 100;
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .modal {
+    background: var(--bg);
+    border-radius: 20px;
+    padding: 24px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalIn 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.9) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    margin: 0 0 8px;
+    color: var(--ink);
+  }
+
+  .modal p {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 0 0 20px;
+    line-height: 1.5;
+  }
+
+  .modal-buttons {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-family: 'Geist', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.15s, background 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .btn:active { transform: scale(0.96); }
+
+  .btn-primary {
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .btn-secondary {
+    background: rgba(26, 46, 38, 0.08);
+    color: var(--ink);
+  }
+
+  .btn-danger {
+    background: var(--coral);
+    color: white;
+  }
+
+  .input-group {
+    margin-bottom: 14px;
+  }
+
+  .input-group label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+
+  .input-group input,
+  .input-group select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid rgba(26, 46, 38, 0.15);
+    border-radius: 10px;
+    font-family: 'Geist', sans-serif;
+    font-size: 15px;
+    background: white;
+    color: var(--ink);
+  }
+
+  .input-group input:focus,
+  .input-group select:focus {
+    outline: none;
+    border-color: var(--leaf);
+  }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .tool-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    background: white;
+    border: 1.5px solid rgba(26, 46, 38, 0.1);
+    border-radius: 12px;
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .tool-btn:active {
+    transform: scale(0.97);
+    background: var(--bg-deep);
+  }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--ink-soft);
+    font-size: 13px;
+    font-style: italic;
+    font-family: 'Fraunces', serif;
+  }
+
+  /* Celebration */
+  .celebrate {
+    text-align: center;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, var(--leaf) 0%, var(--leaf-deep) 100%);
+    border-radius: 20px;
+    color: var(--bg);
+    margin: 20px 0;
+    animation: modalIn 0.5s cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+
+  .celebrate h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    margin: 0 0 6px;
+    font-weight: 800;
+  }
+
+  .celebrate p {
+    margin: 0;
+    opacity: 0.85;
+    font-size: 14px;
+  }
+
+  .celebrate-emoji {
+    font-size: 56px;
+    display: block;
+    margin-bottom: 8px;
+    animation: bounce 1.5s infinite;
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .delete-custom {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(212, 99, 74, 0.9);
+    color: white;
+    border: none;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    line-height: 1;
+    padding: 0;
+  }
+
+  .setup-screen {
+    max-width: 480px;
+    margin: 40px auto;
+    padding: 24px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 8px 24px var(--shadow-strong);
+  }
+
+  .setup-screen h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    margin: 0 0 12px;
+    color: var(--ink);
+  }
+
+  .setup-screen .step {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(26, 46, 38, 0.08);
+  }
+
+  .setup-screen .step:last-child {
+    border-bottom: none;
+  }
+
+  .setup-screen .step-num {
+    display: inline-flex;
+    width: 22px;
+    height: 22px;
+    background: var(--ink);
+    color: var(--bg);
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 8px;
+  }
+
+  .setup-screen code {
+    background: var(--bg-deep);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'Geist Mono', monospace;
+  }
+
+  .setup-screen a {
+    color: var(--leaf-deep);
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+// ============================================================
+// CONFIG: vul deze 2 waardes in (zie README voor instructies)
+// ============================================================
+const JSONBIN_API_KEY = 'PLAK_HIER_JE_X_MASTER_KEY';
+const JSONBIN_BIN_ID = 'PLAK_HIER_JE_BIN_ID';
+// ============================================================
+
+const SYNC_INTERVAL_ACTIVE_MS = 5000;
+const SYNC_INTERVAL_BACKGROUND_MS = 30000;
+const SYNC_DEBOUNCE_MS = 800;
+const STORAGE_KEY = 'vakantieKoningslijst_v2';
+
+const DEFAULT_ITEMS = [
+  { c: 'Reisdocumenten', n: 'Bankpas / creditcard', e: '💳' },
+  { c: 'Reisdocumenten', n: 'Contant geld', e: '💶' },
+  { c: 'Reisdocumenten', n: 'Medisch paspoort', e: '💉' },
+  { c: 'Reisdocumenten', n: 'Paspoort / ID', e: '🛂' },
+  { c: 'Reisdocumenten', n: 'Reisverzekering', e: '📋' },
+  { c: 'Reisdocumenten', n: 'Reispapieren', e: '📄' },
+  { c: 'Reisdocumenten', n: 'Rijbewijs', e: '🪪' },
+  { c: 'Reisdocumenten', n: 'Visum / ESTA', e: '🛃' },
+  { c: 'Reisdocumenten', n: 'Vliegtickets', e: '✈️' },
+  { c: 'Reisdocumenten', n: 'Zorgpas', e: '🏥' },
+  { c: 'Verzorging', n: 'Aftersun', e: '🧴' },
+  { c: 'Verzorging', n: 'Bodylotion', e: '🧴' },
+  { c: 'Verzorging', n: 'Bril + koker', e: '👓' },
+  { c: 'Verzorging', n: 'Dag- nachtcrème', e: '🪞' },
+  { c: 'Verzorging', n: 'Deodorant', e: '🧴' },
+  { c: 'Verzorging', n: 'Desinfectiemiddel', e: '🧼' },
+  { c: 'Verzorging', n: 'Gezichtscrème', e: '🪞' },
+  { c: 'Verzorging', n: 'Gezichtsdoekjes', e: '🧻' },
+  { c: 'Verzorging', n: 'Haarborstel', e: '💇' },
+  { c: 'Verzorging', n: 'Haarlak / gel', e: '💁' },
+  { c: 'Verzorging', n: 'Krul-/stijltang', e: '🔌' },
+  { c: 'Verzorging', n: 'Lenzen + vloeistof', e: '👁️' },
+  { c: 'Verzorging', n: 'Lippenbalsem', e: '💋' },
+  { c: 'Verzorging', n: 'Make-up', e: '💄' },
+  { c: 'Verzorging', n: 'Medicijnen', e: '💊' },
+  { c: 'Verzorging', n: 'Nagelschaar / vijl', e: '💅' },
+  { c: 'Verzorging', n: 'Paracetamol', e: '💊' },
+  { c: 'Verzorging', n: 'Pincet', e: '🤏' },
+  { c: 'Verzorging', n: 'Pleisters', e: '🩹' },
+  { c: 'Verzorging', n: 'Scheerspullen', e: '🪒' },
+  { c: 'Verzorging', n: 'Shampoo + cond.', e: '🧴' },
+  { c: 'Verzorging', n: 'Speldjes / elastiek', e: '💈' },
+  { c: 'Verzorging', n: 'Tandenborstel', e: '🪥' },
+  { c: 'Verzorging', n: 'Tandpasta', e: '🪥' },
+  { c: 'Verzorging', n: 'Watten(staafjes)', e: '☁️' },
+  { c: 'Verzorging', n: 'Zakdoekjes', e: '🤧' },
+  { c: 'Verzorging', n: 'Zonnebrand', e: '☀️' },
+  { c: 'Kleding', n: 'Hoed / Pet', e: '🧢' },
+  { c: 'Kleding', n: 'Jurken', e: '👗' },
+  { c: 'Kleding', n: 'Korte broeken', e: '🩳' },
+  { c: 'Kleding', n: 'Lange broeken', e: '👖' },
+  { c: 'Kleding', n: 'Ondergoed', e: '🩲' },
+  { c: 'Kleding', n: 'Overhemden', e: '👔' },
+  { c: 'Kleding', n: 'Pyjama', e: '🛌' },
+  { c: 'Kleding', n: 'Rokken', e: '👗' },
+  { c: 'Kleding', n: 'Schoenen', e: '👟' },
+  { c: 'Kleding', n: 'Sieraden', e: '💍' },
+  { c: 'Kleding', n: 'Sokken', e: '🧦' },
+  { c: 'Kleding', n: 'Strandhanddoek', e: '🏖️' },
+  { c: 'Kleding', n: 'Tops', e: '👚' },
+  { c: 'Kleding', n: 'Trui', e: '🧥' },
+  { c: 'Kleding', n: 'T-shirt', e: '👕' },
+  { c: 'Kleding', n: 'Zonnebril', e: '🕶️' },
+  { c: 'Kleding', n: 'Zwemkleding', e: '🩱' },
+  { c: 'Overige', n: 'Boeken', e: '📚' },
+  { c: 'Overige', n: 'Camera + oplader', e: '📷' },
+  { c: 'Overige', n: 'Geheugenkaartje', e: '💾' },
+  { c: 'Overige', n: 'Plastic zak', e: '🛍️' },
+  { c: 'Overige', n: 'Laptop + oplader', e: '💻' },
+  { c: 'Overige', n: 'Laptophoes', e: '💼' },
+  { c: 'Overige', n: 'Telefoon + oplader', e: '📱' },
+  { c: 'Overige', n: 'Oordoppen', e: '🎧' },
+  { c: 'Overige', n: 'Paraplu', e: '☂️' },
+  { c: 'Overige', n: 'Pen + papier', e: '✏️' },
+  { c: 'Overige', n: 'Regenkleding', e: '🧥' },
+  { c: 'Overige', n: 'Reisgids', e: '🗺️' },
+  { c: 'Overige', n: 'Sleutels', e: '🔑' },
+  { c: 'Overige', n: 'Spelletjes', e: '🎲' },
+  { c: 'Overige', n: 'Tablet + oplader', e: '📱' },
+  { c: 'Overige', n: 'Telefoonhoes', e: '📲' },
+  { c: 'Overige', n: 'Wasgoedzak', e: '🧺' },
+  { c: 'Handbagage', n: 'Boek', e: '📖' },
+  { c: 'Handbagage', n: 'Handbagage', e: '🎒' },
+  { c: 'Handbagage', n: 'Mobiele telefoon', e: '📱' },
+  { c: 'Handbagage', n: 'Muziek', e: '🎵' },
+  { c: 'Handbagage', n: 'Nekkussen', e: '💺' },
+  { c: 'Handbagage', n: 'Paspoort / ID', e: '🛂' },
+  { c: 'Handbagage', n: 'Reispapieren', e: '📄' },
+  { c: 'Handbagage', n: 'Slaapmasker', e: '😴' },
+  { c: 'Handbagage', n: 'Snacks', e: '🍪' },
+  { c: 'Handbagage', n: 'Vliegdoppen', e: '🎧' },
+  { c: 'Handbagage', n: 'Zonnebril', e: '🕶️' },
+];
+
+const CATEGORY_ICONS = {
+  'Reisdocumenten': '🧳',
+  'Verzorging': '🧴',
+  'Kleding': '👕',
+  'Overige': '🎒',
+  'Handbagage': '✈️',
+  'Eigen items': '⭐',
+};
+
+const isSyncConfigured =
+  JSONBIN_API_KEY && JSONBIN_API_KEY !== 'PLAK_HIER_JE_X_MASTER_KEY' &&
+  JSONBIN_BIN_ID && JSONBIN_BIN_ID !== 'PLAK_HIER_JE_BIN_ID';
+
+function buildDefaultState() {
+  const items = DEFAULT_ITEMS.map((it, i) => ({ ...it, id: 'd' + i, custom: false }));
+  return { items, states: {}, lastUpdated: Date.now() };
+}
+
+// JSONBin helpers
+async function fetchRemote() {
+  const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+    headers: {
+      'X-Master-Key': JSONBIN_API_KEY,
+      'X-Bin-Meta': 'false',
+    },
+  });
+  if (!res.ok) throw new Error('Fetch failed: ' + res.status);
+  return await res.json();
+}
+
+async function pushRemote(data) {
+  const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Master-Key': JSONBIN_API_KEY,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Push failed: ' + res.status);
+  return await res.json();
+}
+
+function SetupScreen() {
+  return (
+    <div className="app">
+      <div className="header">
+        <h1>Vakantie <span className="ampersand">Konings</span>lijst</h1>
+        <div className="subtitle">eenmalige setup</div>
+      </div>
+      <div className="setup-screen">
+        <h2>🔧 Sync nog niet ingesteld</h2>
+        <p style={{ color: 'var(--ink-soft)', fontSize: 14, lineHeight: 1.5 }}>
+          Om te synchroniseren tussen telefoons moet je eenmalig 2 waardes invullen in <code>index.html</code>. Het kost ongeveer 2 minuten.
+        </p>
+
+        <div className="step">
+          <span className="step-num">1</span>
+          <strong>Account maken</strong>
+          <p style={{ marginTop: 6, fontSize: 13, lineHeight: 1.5 }}>
+            Ga naar <a href="https://jsonbin.io" target="_blank" rel="noopener">jsonbin.io</a> en log in met GitHub (1 klik, gratis).
+          </p>
+        </div>
+
+        <div className="step">
+          <span className="step-num">2</span>
+          <strong>API Key kopiëren</strong>
+          <p style={{ marginTop: 6, fontSize: 13, lineHeight: 1.5 }}>
+            Klik op <code>API Keys</code> in het menu links. Kopieer de <code>X-MASTER-KEY</code>.
+          </p>
+        </div>
+
+        <div className="step">
+          <span className="step-num">3</span>
+          <strong>Nieuwe Bin aanmaken</strong>
+          <p style={{ marginTop: 6, fontSize: 13, lineHeight: 1.5 }}>
+            Klik op <code>Bins</code> dan op <code>CREATE BIN</code>. Plak <code>{`{}`}</code> als inhoud en klik op het sla-op icoontje. Kopieer de <code>BIN ID</code> van de aangemaakte bin.
+          </p>
+        </div>
+
+        <div className="step">
+          <span className="step-num">4</span>
+          <strong>Invullen in code</strong>
+          <p style={{ marginTop: 6, fontSize: 13, lineHeight: 1.5 }}>
+            Open <code>index.html</code> in de GitHub editor en vul deze 2 regels bovenaan in:
+          </p>
+          <pre style={{ background: 'var(--bg-deep)', padding: 10, borderRadius: 8, fontSize: 11, overflow: 'auto', marginTop: 8 }}>
+{`const JSONBIN_API_KEY = '$2a$10$jouw_master_key_hier';
+const JSONBIN_BIN_ID  = '67abc...jouw_bin_id_hier';`}
+          </pre>
+        </div>
+
+        <div className="step">
+          <span className="step-num">5</span>
+          <strong>Commit en klaar</strong>
+          <p style={{ marginTop: 6, fontSize: 13, lineHeight: 1.5 }}>
+            Sla op via "Commit changes". Na 1 minuut is GitHub Pages bijgewerkt en synchroniseren alle telefoons via dezelfde URL.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [data, setData] = useState(buildDefaultState());
+  const [loaded, setLoaded] = useState(false);
+  const [syncStatus, setSyncStatus] = useState('local');
+  const [glowingIds, setGlowingIds] = useState(new Set());
+  const [confirmUnpack, setConfirmUnpack] = useState(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const lastSyncedRef = useRef(0);
+  const pushTimerRef = useRef(null);
+  const isPushingRef = useRef(false);
+  const dataRef = useRef(data);
+
+  useEffect(() => { dataRef.current = data; }, [data]);
+
+  // Eerste keer: laad uit localStorage en daarna uit remote
+  useEffect(() => {
+    let initial = buildDefaultState();
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.items && parsed.items.length > 0) {
+          initial = parsed;
+        }
+      }
+    } catch (e) {}
+    setData(initial);
+    setLoaded(true);
+
+    if (!isSyncConfigured) {
+      setSyncStatus('local');
+      return;
+    }
+
+    // Initiële remote fetch
+    (async () => {
+      setSyncStatus('syncing');
+      try {
+        const remote = await fetchRemote();
+        const record = remote.record;
+        // Als remote leeg is (eerste keer), push de huidige state
+        if (!record || !record.items || record.items.length === 0) {
+          await pushRemote(initial);
+          lastSyncedRef.current = initial.lastUpdated;
+        } else {
+          // Gebruik remote als die nieuwer is
+          if ((record.lastUpdated || 0) > (initial.lastUpdated || 0)) {
+            setData(record);
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(record)); } catch (e) {}
+            lastSyncedRef.current = record.lastUpdated || Date.now();
+          } else if ((initial.lastUpdated || 0) > (record.lastUpdated || 0)) {
+            // Lokaal is nieuwer, push naar remote
+            await pushRemote(initial);
+            lastSyncedRef.current = initial.lastUpdated;
+          } else {
+            lastSyncedRef.current = record.lastUpdated || Date.now();
+          }
+        }
+        setSyncStatus('synced');
+      } catch (e) {
+        console.warn('Initial sync failed:', e);
+        setSyncStatus('offline');
+      }
+    })();
+  }, []);
+
+  // Polling voor remote wijzigingen, met visibility-aware interval en glow-detectie
+  useEffect(() => {
+    if (!loaded || !isSyncConfigured) return;
+
+    const poll = async () => {
+      if (isPushingRef.current) return;
+      try {
+        const remote = await fetchRemote();
+        const record = remote.record;
+        if (record && record.lastUpdated && record.lastUpdated > lastSyncedRef.current) {
+          // Alleen overschrijven als remote nieuwer is dan onze laatste known sync
+          // en de huidige data niet nieuwer is (om eigen wijzigingen niet te overschrijven)
+          if (record.lastUpdated > (dataRef.current.lastUpdated || 0)) {
+            // Detecteer welke items veranderd zijn voor glow-effect
+            const oldStates = dataRef.current.states || {};
+            const newStates = record.states || {};
+            const oldItemIds = new Set((dataRef.current.items || []).map((it) => it.id));
+            const newItemIds = new Set((record.items || []).map((it) => it.id));
+
+            const changedIds = [];
+            const newlyPackedIds = [];
+
+            // States veranderd
+            const allIds = new Set([...Object.keys(oldStates), ...Object.keys(newStates), ...oldItemIds, ...newItemIds]);
+            allIds.forEach((id) => {
+              const before = oldStates[id] || 'open';
+              const after = newStates[id] || 'open';
+              if (before !== after) {
+                changedIds.push(id);
+                if (after === 'packed') newlyPackedIds.push(id);
+              }
+            });
+
+            // Nieuwe items toegevoegd door iemand anders
+            newItemIds.forEach((id) => {
+              if (!oldItemIds.has(id)) changedIds.push(id);
+            });
+
+            setData(record);
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(record)); } catch (e) {}
+
+            if (changedIds.length > 0) {
+              triggerGlow(changedIds);
+              if (navigator.vibrate && newlyPackedIds.length > 0) navigator.vibrate(20);
+            }
+          }
+          lastSyncedRef.current = record.lastUpdated;
+        }
+        setSyncStatus((s) => s === 'syncing' ? s : 'synced');
+      } catch (e) {
+        setSyncStatus('offline');
+      }
+    };
+
+    // Polling met visibility-aware interval
+    let intervalId = null;
+    const startPolling = (ms) => {
+      if (intervalId) clearInterval(intervalId);
+      intervalId = setInterval(poll, ms);
+    };
+    startPolling(document.hidden ? SYNC_INTERVAL_BACKGROUND_MS : SYNC_INTERVAL_ACTIVE_MS);
+
+    // Verbeterpunt 1: direct synchen bij terugkomen
+    const onVisibilityChange = () => {
+      if (!document.hidden) {
+        // App komt naar voren, doe meteen een sync
+        poll();
+        startPolling(SYNC_INTERVAL_ACTIVE_MS);
+      } else {
+        // App gaat naar achtergrond, slow down
+        startPolling(SYNC_INTERVAL_BACKGROUND_MS);
+      }
+    };
+
+    // Pageshow vangt PWA-resume op iOS na geheugen-vries
+    const onPageShow = (e) => {
+      if (e.persisted || !document.hidden) {
+        poll();
+      }
+    };
+
+    // Online event, sync zodra verbinding terug is
+    const onOnline = () => {
+      poll();
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('pageshow', onPageShow);
+    window.addEventListener('focus', onVisibilityChange);
+    window.addEventListener('online', onOnline);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('pageshow', onPageShow);
+      window.removeEventListener('focus', onVisibilityChange);
+      window.removeEventListener('online', onOnline);
+    };
+  }, [loaded]);
+
+  // Glow-helper: zet ids in een Set, ruim na 1.2s op
+  const triggerGlow = useCallback((ids) => {
+    setGlowingIds((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.add(id));
+      return next;
+    });
+    ids.forEach((id) => {
+      setTimeout(() => {
+        setGlowingIds((prev) => {
+          if (!prev.has(id)) return prev;
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }, 1200);
+    });
+  }, []);
+
+  // Update data + queue push naar remote
+  const updateData = useCallback((updater) => {
+    setData((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      const stamped = { ...next, lastUpdated: Date.now() };
+
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stamped)); } catch (e) {}
+
+      if (isSyncConfigured) {
+        setSyncStatus('syncing');
+        if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
+        pushTimerRef.current = setTimeout(async () => {
+          isPushingRef.current = true;
+          try {
+            await pushRemote(stamped);
+            lastSyncedRef.current = stamped.lastUpdated;
+            setSyncStatus('synced');
+          } catch (e) {
+            console.warn('Push failed:', e);
+            setSyncStatus('offline');
+          } finally {
+            isPushingRef.current = false;
+          }
+        }, SYNC_DEBOUNCE_MS);
+      }
+
+      return stamped;
+    });
+  }, []);
+
+  const handleClick = (id) => {
+    const current = data.states[id] || 'open';
+    let next;
+    if (current === 'open') {
+      next = 'ready';
+      if (navigator.vibrate) navigator.vibrate(10);
+    } else if (current === 'ready') {
+      next = 'packed';
+      if (navigator.vibrate) navigator.vibrate([10, 30, 20]);
+      triggerGlow([id]);
+    } else {
+      setConfirmUnpack(id);
+      return;
+    }
+    updateData((prev) => ({ ...prev, states: { ...prev.states, [id]: next } }));
+  };
+
+  const confirmUnpackYes = () => {
+    updateData((prev) => ({ ...prev, states: { ...prev.states, [confirmUnpack]: 'open' } }));
+    setConfirmUnpack(null);
+  };
+
+  const addCustomItem = (name, category, emoji) => {
+    const newItem = {
+      id: 'c' + Date.now(),
+      n: name,
+      c: category,
+      e: emoji || '📦',
+      custom: true,
+    };
+    updateData((prev) => ({ ...prev, items: [...prev.items, newItem] }));
+    setShowAdd(false);
+  };
+
+  const deleteCustom = (id) => {
+    updateData((prev) => {
+      const newStates = { ...prev.states };
+      delete newStates[id];
+      return { ...prev, items: prev.items.filter((it) => it.id !== id), states: newStates };
+    });
+    setConfirmDelete(null);
+  };
+
+  const resetAll = () => {
+    updateData((prev) => ({ ...prev, states: {} }));
+    setConfirmReset(false);
+  };
+
+  const grouped = useMemo(() => {
+    const open = data.items.filter((it) => (data.states[it.id] || 'open') !== 'packed');
+    const packed = data.items.filter((it) => data.states[it.id] === 'packed');
+
+    const byCategory = {};
+    open.forEach((it) => {
+      if (!byCategory[it.c]) byCategory[it.c] = [];
+      byCategory[it.c].push(it);
+    });
+    Object.keys(byCategory).forEach((c) => {
+      byCategory[c].sort((a, b) => a.n.localeCompare(b.n, 'nl'));
+    });
+
+    const catOrder = ['Reisdocumenten', 'Verzorging', 'Kleding', 'Overige', 'Handbagage', 'Eigen items'];
+    const ordered = catOrder.filter((c) => byCategory[c]).map((c) => ({ name: c, items: byCategory[c] }));
+    Object.keys(byCategory).forEach((c) => {
+      if (!catOrder.includes(c)) ordered.push({ name: c, items: byCategory[c] });
+    });
+
+    packed.sort((a, b) => a.n.localeCompare(b.n, 'nl'));
+    return { open: ordered, packed, totalPacked: packed.length };
+  }, [data]);
+
+  const total = data.items.length;
+  const packedCount = grouped.totalPacked;
+  const percent = total > 0 ? Math.round((packedCount / total) * 100) : 0;
+
+  const statusText = {
+    synced: '✓ Gesynchroniseerd',
+    syncing: '↻ Synchroniseren',
+    offline: '⚠ Offline',
+    local: '💾 Alleen lokaal',
+  }[syncStatus];
+
+  return (
+    <div className="app">
+      <div className="header">
+        <h1>Vakantie <span className="ampersand">Konings</span>lijst</h1>
+        <div className="subtitle">caravan inpakker</div>
+        <div className={`sync-status ${syncStatus}`}>
+          <span className="sync-dot"></span>
+          {statusText}
+        </div>
+      </div>
+
+      <div className="progress-card">
+        <div className="progress-top">
+          <span className="progress-label">Voortgang</span>
+          <span className="progress-count">
+            {packedCount}<span className="total"> / {total}</span>
+          </span>
+        </div>
+        <div className="progress-bar">
+          <div className="progress-fill" style={{ width: percent + '%' }} />
+        </div>
+        <div className="progress-percent">{percent}% INGEPAKT</div>
+      </div>
+
+      <div className="toolbar">
+        <button className="tool-btn" onClick={() => setShowAdd(true)}>＋ Eigen item</button>
+        <button className="tool-btn" onClick={() => setConfirmReset(true)}>↻ Reset alles</button>
+      </div>
+
+      {percent === 100 && (
+        <div className="celebrate">
+          <span className="celebrate-emoji">🏕️</span>
+          <h2>Klaar voor vertrek!</h2>
+          <p>Alles is ingepakt. Veilige reis!</p>
+        </div>
+      )}
+
+      {grouped.open.map((group) => (
+        <div key={group.name} className="category">
+          <h2 className="category-title">
+            <span className="category-icon">{CATEGORY_ICONS[group.name] || '📦'}</span>
+            {group.name}
+          </h2>
+          <div className="grid">
+            {group.items.map((item) => {
+              const state = data.states[item.id] || 'open';
+              return (
+                <div
+                  key={item.id}
+                  className={`item ${state} ${item.custom ? 'custom' : ''} ${glowingIds.has(item.id) ? 'glowing' : ''}`}
+                  onClick={() => handleClick(item.id)}
+                >
+                  {item.custom && (
+                    <button
+                      className="delete-custom"
+                      onClick={(e) => { e.stopPropagation(); setConfirmDelete(item.id); }}
+                      aria-label="Verwijder"
+                    >×</button>
+                  )}
+                  <span className="item-icon">{item.e}</span>
+                  <span className="item-label">{item.n}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+
+      <div className="packed-section">
+        <div className="packed-header">
+          <h2>Ingepakte spullen</h2>
+          <span className="packed-count">{packedCount}</span>
+        </div>
+        {grouped.packed.length === 0 ? (
+          <div className="empty">Nog niks ingepakt, kom op!</div>
+        ) : (
+          <div className="grid">
+            {grouped.packed.map((item) => (
+              <div
+                key={item.id}
+                className={`item packed ${item.custom ? 'custom' : ''} ${glowingIds.has(item.id) ? 'glowing' : ''}`}
+                onClick={() => handleClick(item.id)}
+              >
+                <span className="item-icon">{item.e}</span>
+                <span className="item-label">{item.n}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {confirmUnpack && (
+        <Modal
+          title="Is dit toch niet ingepakt?"
+          body="Dan zet ik 'm weer terug op de oorspronkelijke plek."
+          onClose={() => setConfirmUnpack(null)}
+          buttons={
+            <>
+              <button className="btn btn-secondary" onClick={() => setConfirmUnpack(null)}>Nee, laat staan</button>
+              <button className="btn btn-primary" onClick={confirmUnpackYes}>Ja, terugzetten</button>
+            </>
+          }
+        />
+      )}
+
+      {confirmReset && (
+        <Modal
+          title="Alles resetten?"
+          body="Alle items gaan terug naar de oorspronkelijke staat. Eigen toegevoegde items blijven staan. Dit gebeurt op alle telefoons tegelijk."
+          onClose={() => setConfirmReset(false)}
+          buttons={
+            <>
+              <button className="btn btn-secondary" onClick={() => setConfirmReset(false)}>Annuleer</button>
+              <button className="btn btn-danger" onClick={resetAll}>Ja, reset</button>
+            </>
+          }
+        />
+      )}
+
+      {confirmDelete && (
+        <Modal
+          title="Item verwijderen?"
+          body="Dit eigen item wordt permanent uit de lijst gehaald. Ook op andere telefoons."
+          onClose={() => setConfirmDelete(null)}
+          buttons={
+            <>
+              <button className="btn btn-secondary" onClick={() => setConfirmDelete(null)}>Annuleer</button>
+              <button className="btn btn-danger" onClick={() => deleteCustom(confirmDelete)}>Verwijder</button>
+            </>
+          }
+        />
+      )}
+
+      {showAdd && <AddItemModal onAdd={addCustomItem} onClose={() => setShowAdd(false)} />}
+    </div>
+  );
+}
+
+function Modal({ title, body, buttons, onClose }) {
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h3>{title}</h3>
+        <p>{body}</p>
+        <div className="modal-buttons">{buttons}</div>
+      </div>
+    </div>
+  );
+}
+
+function AddItemModal({ onAdd, onClose }) {
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('Eigen items');
+  const [emoji, setEmoji] = useState('📦');
+
+  const handleAdd = () => {
+    if (name.trim()) onAdd(name.trim(), category, emoji.trim() || '📦');
+  };
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h3>Eigen item toevoegen</h3>
+        <p>Mis je iets? Voeg het hier toe, verschijnt op alle telefoons.</p>
+        <div className="input-group">
+          <label>Naam</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Bijv. Kampeerstoel" autoFocus maxLength={30} />
+        </div>
+        <div className="input-group">
+          <label>Categorie</label>
+          <select value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option>Eigen items</option>
+            <option>Reisdocumenten</option>
+            <option>Verzorging</option>
+            <option>Kleding</option>
+            <option>Overige</option>
+            <option>Handbagage</option>
+          </select>
+        </div>
+        <div className="input-group">
+          <label>Emoji (optioneel)</label>
+          <input type="text" value={emoji} onChange={(e) => setEmoji(e.target.value)} maxLength={2} placeholder="📦" />
+        </div>
+        <div className="modal-buttons">
+          <button className="btn btn-secondary" onClick={onClose}>Annuleer</button>
+          <button className="btn btn-primary" onClick={handleAdd} disabled={!name.trim()}>Toevoegen</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const Root = isSyncConfigured ? App : function() {
+  // Toon setup screen als sync niet geconfigureerd is. App werkt offline-only.
+  return (
+    <>
+      <SetupScreen />
+      <div style={{ maxWidth: 480, margin: '0 auto 40px', padding: '0 24px', textAlign: 'center' }}>
+        <p style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+          Of gebruik de app gewoon offline zonder sync (lokaal opgeslagen op deze telefoon):
+        </p>
+        <button
+          className="btn btn-secondary"
+          style={{ flex: 'none', padding: '10px 20px' }}
+          onClick={() => {
+            sessionStorage.setItem('skipSync', '1');
+            location.reload();
+          }}
+        >
+          Gebruik zonder sync
+        </button>
+      </div>
+    </>
+  );
+};
+
+const FinalRoot = (isSyncConfigured || sessionStorage.getItem('skipSync')) ? App : Root;
+
+ReactDOM.createRoot(document.getElementById('root')).render(<FinalRoot />);
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
